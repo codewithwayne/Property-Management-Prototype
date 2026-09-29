@@ -79,7 +79,7 @@ export const MockDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     setIsLoading(true);
     // Simulate network delay for realism
     await new Promise(resolve => setTimeout(resolve, 300));
-    setState(prev => ({ ...prev, ...newData }));
+    setState((prev: typeof INITIAL_DATA) => ({ ...prev, ...newData }));
     setIsLoading(false);
   };
 
@@ -88,7 +88,7 @@ export const MockDataProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const updateUnitStatus = async (unitId: string, status: Unit['status'], tenantId?: string) => {
-    const newUnits = state.units.map(u => u.id === unitId ? { ...u, status, tenantId } : u);
+    const newUnits = state.units.map((u: Unit) => u.id === unitId ? { ...u, status, tenantId } : u);
     await updateState({ units: newUnits });
   };
 
@@ -97,7 +97,7 @@ export const MockDataProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const updateMaintenanceStatus = async (id: string, status: MaintenanceRequest['status']) => {
-    const newRequests = state.maintenanceRequests.map(r => r.id === id ? { ...r, status } : r);
+    const newRequests = state.maintenanceRequests.map((r: MaintenanceRequest) => r.id === id ? { ...r, status } : r);
     await updateState({ maintenanceRequests: newRequests });
   };
 
