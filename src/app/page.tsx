@@ -1,0 +1,165 @@
+"use client";
+
+import React from 'react';
+import { useMockData } from '@/context/MockDataContext';
+import { StatCard } from '@/components/ui/StatCard';
+import { Badge } from '@/components/ui/Badge';
+import { formatKES } from '@/lib/utils';
+import {
+  Building2,
+  DoorOpen,
+  Users,
+  CreditCard,
+  Wrench,
+  TrendingUp,
+  AlertCircle
+} from 'lucide-react';
+import Link from 'next/link';
+
+export default function Dashboard() {
+  const { properties, units, tenants, payments, maintenanceRequests } = useMockData();
+
+  // Calculated Metrics
+  const totalProperties = properties.length;
+  const totalUnits = units.length;
+  const occupiedUnits = units.filter(u => u.status === 'Occupied').length;
+  const vacantUnits = totalUnits - occupiedUnits;
+
+  const monthlyExpectedRent = units.reduce((acc, unit) => acc + unit.monthlyRent, 0);
+  const monthlyCollectedRent = payments
+    .filter(p => p.date.startsWith('2026-09'))
+    .reduce((acc, p) => acc + p.amountPaid, 0);
+
+  const outstandingRent = payments
+    .filter(p => p.date.startsWith('2026-09'))
+    .reduce((acc, p) => acc + p.balance, 0);
+
+  const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const recentMaintenance = [...maintenanceRequests].sort((a, b) => b.dateReported.localeCompare(a.dateReported)).slice(0, 5);
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+        <p className="text-slate-500">Welcome back, here is what is happening with your properties.</p>
+      </div>
+
+      {/* KPI Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Properties"
+          value={totalProperties}
+          icon={<Building2 size={20} />}
+          description="Active residential blocks"
+        />
+        <StatCard
+          title="Occupancy Rate"
+          value={`${Math.round((occupiedUnits / totalUnits) * 100)}%`}
+          icon={<DoorOpen size={20} />}
+          description={`${occupiedUnits}/${totalUnits} units occupied`}
+          trend={{ value: '2%', isPositive: true }}
+        />
+        <StatCard
+          title="Monthly Revenue"
+          value={formatKES(monthlyCollectedRent)}
+          icon={<CreditCard size={20} />}
+          description={`of ${formatKES(monthlyExpectedRent)} expected`}
+        />
+        <StatCard
+          title="Outstanding"
+          value={formatKES(outstandingRent)}
+          icon={<AlertCircle size={20} />}
+          description="Total unpaid balance"
+          trend={{ value: '5%', isPositive: false }}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Payments */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+              <TrendingUp size={18} className="text-indigo-600" />
+              Recent Payments
+            </h3>
+            <Link href="/rent" className="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+              View All
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-500 font-medium">
+                <tr className="border-b border-slate-100">
+                  <th className="px-6 py-3">Tenant</th>
+                  <th className="px-6 py-3">Amount</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {recentPayments.map(pay => {
+                  const tenant = tenants.find(t => t.id === pay.tenantId);
+                  return (
+                    <tr key={pay.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-slate-900">{tenant?.name}</td>
+                      <td className="px-6 py-4">{formatKES(pay.amountPaid)}</td>
+                      <td className="px-6 py-4">
+                        <Badge variant={pay.status === 'Paid' ? 'success' : pay.status === 'Partially Paid' ? 'warning' : 'danger'}>
+                          {pay.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-slate-500">{pay.date}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Maintenance */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+              <Wrench size={18} className="text-indigo-600" />
+              Maintenance Requests
+            </h3>
+            <Link href="/maintenance" className="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+              View All
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-500 font-medium">
+                <tr className="border-b border-slate-100">
+                  <th className="px-6 py-3">Issue</th>
+                  <th className="px-6 py-3">Priority</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {recentMaintenance.map(req => (
+                  <tr key={req.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-slate-900">{req.title}</td>
+                    <td className="px-6 py-4">
+                      <Badge variant={req.priority === 'High' ? 'danger' : req.priority === 'Medium' ? 'warning' : 'neutral'}>
+                        {req.priority}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant={req.status === 'Resolved' ? 'success' : req.status === 'In Progress' ? 'info' : 'neutral'}>
+                        {req.status}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-slate-500">{req.dateReported}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
